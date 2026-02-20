@@ -3,9 +3,9 @@
 [![ICLR 2026](https://img.shields.io/badge/ICLR-2026-purple.svg)](https://iclr.cc/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-Implementation-blue.svg)](https://pytorch.org/)
 
-In this paper, we revisit weight regularization in low-rank CL as a new perspective for mitigating task interference in PECL. Unlike existing low-rank CL methods, we mitigate task interference by regularizing a shared low-rank update through EWC, thereby keeping the storage requirement and inference costs constant regardless of the number of tasks. Moreover, we provide the first systematic investigation of EWC in low-rank CL, showing that it achieves a better stability–plasticity trade-off than other low-rank methods and enables competitive performance across a wide range of trade-off points.
+📄 **Paper:** [Revisiting Weight Regularization for Low-Rank Continual Learning](https://arxiv.org/abs/2602.17559)
 
-📄 **Paper**: []()
+In this paper, we revisit weight regularization in low-rank CL as a new perspective for mitigating task interference in PECL. Unlike existing low-rank CL methods, we mitigate task interference by regularizing a shared low-rank update through EWC, thereby keeping the storage requirement and inference costs constant regardless of the number of tasks. Moreover, we provide the first systematic investigation of EWC in low-rank CL, showing that it achieves a better stability–plasticity trade-off than other low-rank methods and enables competitive performance across a wide range of trade-off points.
 
 If you find this repository useful for your research, please consider citing:
 ```
