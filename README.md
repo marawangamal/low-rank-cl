@@ -9,7 +9,12 @@ In this paper, we revisit weight regularization in low-rank CL as a new perspect
 
 If you find this repository useful for your research, please consider citing:
 ```
-
+@article{zheng2026revisiting,
+  title={Revisiting Weight Regularization for Low-Rank Continual Learning},
+  author={Zheng, Yaoyue and Zhang, Yin and van de Weijer, Joost and van de Ven, Gido M and Du, Shaoyi and Zhang, Xuetao and Tian, Zhiqiang},
+  journal={arXiv preprint arXiv:2602.17559},
+  year={2026}
+}
 ```
 
 ![Overview](overview.png)
