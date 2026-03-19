@@ -155,7 +155,7 @@ class BaseLearner(object):
         y_pred, y_pred_with_task, y_true, y_task_pred, y_task_true = self._test(self.test_loader)
         accy = self._evaluate(y_pred, y_true)
         accy_with_task = self._evaluate(y_pred_with_task, y_true)
-        accy_task = (y_task_pred == y_task_true).sum().item()/len(y_task_pred)
+        accy_task = round((y_task_pred == y_task_true).sum().item() * 100 / len(y_task_pred), 2)
 
         return accy, accy_with_task, accy_task
     
@@ -176,13 +176,19 @@ class BaseLearner(object):
                 else:
                     outputs = self.network.interface(inputs)  # logits
 
-            predicts = torch.topk(outputs, k=self.topk, dim=1, largest=True, sorted=True)[1].view(-1)  # [bs, topk]
+            predicts = torch.topk(outputs, k=self.topk, dim=1, largest=True, sorted=True)[1]  # [bs, topk]
+            
+            # task-agnostic prediction
+            y_pred.append(predicts.view(-1).cpu().numpy())
+            y_true.append(targets.cpu().numpy())
 
+            # prediction of task id
             if self.init_cls == self.increment:
                 self.class_num = self.increment
-            y_task_pred.append((torch.div(predicts, self.class_num, rounding_mode='trunc')).cpu())
+            y_task_pred.append((torch.div(predicts.view(-1), self.class_num, rounding_mode='trunc')).cpu())
             y_task_true.append((torch.div(targets, self.class_num, rounding_mode='trunc')).cpu())
-
+            
+            # task-aware prediction
             outputs_with_task = torch.zeros_like(outputs)[:, :self.class_num]
             for idx, i in enumerate(torch.div(targets, self.class_num, rounding_mode='trunc')):
                 en, be = self.class_num*i, self.class_num*(i+1)
@@ -190,11 +196,8 @@ class BaseLearner(object):
 
             predicts_with_task = outputs_with_task.argmax(dim=1)
             predicts_with_task = predicts_with_task + (torch.div(targets, self.class_num, rounding_mode='trunc'))*self.class_num
-
-            y_pred.append(predicts.cpu().numpy())
             y_pred_with_task.append(predicts_with_task.cpu().numpy())
-            y_true.append(targets.cpu().numpy())
-
+            
         return (
             np.concatenate(y_pred),
             np.concatenate(y_pred_with_task),

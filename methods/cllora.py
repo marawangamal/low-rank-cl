@@ -6,8 +6,8 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 
 from tqdm import tqdm
-from methods.base import BaseLearner
 from models.net_cllora import Net
+from methods.base import BaseLearner
 from utils.toolkit import tensor2numpy
 from utils.function import KD_loss, Orthogonality_loss
 
@@ -56,10 +56,13 @@ class CLLoRA(BaseLearner):
                 inputs = torch.index_select(inputs, 0, mask)
                 targets = torch.index_select(targets, 0, mask)-self.known_classes
                 
+                logits = self.network(inputs, self.cur_task)['logits']
+                loss = F.cross_entropy(logits, targets)
+
                 if self.cur_task > 0:
                     # Knowledge Distillation
-                    logits, logits_teacher = self.network.forward_kd(inputs)
-                    loss_kd = self.kd_ratio * KD_loss(logits, logits_teacher, T=self.temperature)
+                    logits_kd, logits_teacher = self.network.forward_kd(inputs)
+                    loss_kd = self.kd_ratio * KD_loss(logits_kd, logits_teacher, T=self.temperature)
 
                     optimizer.zero_grad()
                     loss_kd.backward()
@@ -79,10 +82,6 @@ class CLLoRA(BaseLearner):
                                     new_B.grad.mul_(scale.unsqueeze(1))   
                     optimizer.step()
 
-                logits = self.network(inputs, self.cur_task)['logits']
-                loss = F.cross_entropy(logits, targets)
-                
-                if self.cur_task > 0:
                     # Block-wise Orthogonality
                     blk_weights = self.network.image_encoder.block_weights
                     loss_orth = Orthogonality_loss(blk_weights[:self.cur_task], blk_weights[self.cur_task])
@@ -113,12 +112,14 @@ class CLLoRA(BaseLearner):
             f"lora_v.lora_B",
             f"lora_q{target_suffix}.lora",
             f"lora_v{target_suffix}.lora",
-            f"block_weights{target_suffix}",
             f"proxy_fc",
         ]
         for name, param in self.network.named_parameters():
-            param.requires_grad_(any(key in name for key in unfrozen_keys))
-
+            trainable = any(key in name for key in unfrozen_keys)
+            if name.endswith(f"block_weights{target_suffix}"):
+                trainable = True
+            param.requires_grad_(trainable)
+    
 
 def iter_attn_lora_B(model, pos, proj, use_new):
     block_prefix = f"image_encoder.blocks.{pos}.attn"

@@ -11,6 +11,7 @@ from methods.base import BaseLearner
 from utils.toolkit import tensor2numpy
 from utils.toolkit import print_trainable_params, check_params_consistency
 
+
 class Baseline(BaseLearner):
 
     def __init__(self, args):
