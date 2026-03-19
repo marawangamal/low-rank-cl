@@ -35,10 +35,10 @@ This repository provides a PyTorch implementation of continual learning methods 
 
 This project is implemented in PyTorch and tested with the following environment:
 
-- python == 3.8
-- torch == 1.11.0
-- torchvision == 0.12.1
-- timm == 0.6.7
+- python == 3.9.4
+- torch == 2.0.1
+- torchvision == 0.15.2
+- timm == 0.6.12
 
 
 ## Install
@@ -52,9 +52,9 @@ conda env create -f environment.yaml
 Or install manually:
 
 ```bash
-conda create -n low-rank-cl python=3.8 pytorch=1.11.0 torchvision=0.12.0 -c pytorch
+conda create -n low-rank-cl python=3.9.4 pytorch=2.0.1 torchvision=0.15.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 conda activate low-rank-cl
-pip install six ipdb scipy scikit-learn pyyaml tqdm tensorboard timm==0.6.7
+pip install six ipdb scipy pyyaml tqdm timm==0.6.12 numpy==1.25.2 scikit-learn==1.2.0
 ```
 
 
