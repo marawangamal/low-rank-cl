@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import random
 import logging
 import numpy as np
 
@@ -63,6 +64,8 @@ def set_random(args):
     torch.manual_seed(args['seed'])
     torch.cuda.manual_seed(args['seed'])
     torch.cuda.manual_seed_all(args['seed'])
+    np.random.seed(args['seed'])
+    random.seed(args['seed'])
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
@@ -134,15 +137,18 @@ def check_params_consistency(model, optimizer):
 
 
 def accuracy(y_pred, y_true, known_classes, increment=10):
+    y_pred = y_pred.reshape(-1)
+    y_true = y_true.reshape(-1)
     assert len(y_pred) == len(y_true), 'Data length error.'
-    all_acc = {}
-    all_acc['total'] = np.around((y_pred == y_true).sum()*100 / len(y_true), decimals=2)
 
-    # Grouped accuracy
+    all_acc = {}
+    all_acc['total'] = np.around((y_pred == y_true).sum() * 100 / len(y_true), decimals=2)
+
+    # Grouped accuracy by task
     for class_id in range(0, np.max(y_true), increment):
         idxes = np.where(np.logical_and(y_true >= class_id, y_true < class_id + increment))[0]
         label = '{}-{}'.format(str(class_id).rjust(2, '0'), str(class_id+increment-1).rjust(2, '0'))
-        all_acc[label] = np.around((y_pred[idxes] == y_true[idxes]).sum()*100 / len(idxes), decimals=2)
+        all_acc[label] = np.around((y_pred[idxes] == y_true[idxes]).sum() * 100 / len(idxes), decimals=2)
 
     # Old accuracy
     idxes = np.where(y_true < known_classes)[0]
