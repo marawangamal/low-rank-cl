@@ -29,10 +29,10 @@ class CosineLinear(nn.Module):
         self.nb_proxy = nb_proxy
         self.to_reduce = to_reduce
         self.weight = nn.Parameter(torch.Tensor(self.out_features, in_features))
-
+        
         # Learnable scaling parameter
         if sigma:
-            self.sigma = nn.Parameter(torch.Tensor(1))  # learnable scale parameter
+            self.sigma = nn.Parameter(torch.Tensor(1))
         else:
             self.register_parameter('sigma', None)
 
@@ -74,14 +74,61 @@ class CosineLinear(nn.Module):
 
         return out
     
-    def forward_all(self, input, task_id, inc=10, feature_dim=768):
-        start_cls = task_id * inc
+    def forward_task_agnostic(self, input, task_id, inc=10, feature_dim=768):
+        # input shape [batch, 768]
+        # task class slice
+        start_cls = task_id * inc  
         end_cls = start_cls + inc
-        weight_task = self.weight[start_cls:end_cls, task_id*feature_dim:(task_id+1)*feature_dim]
+        
+        weight_task = self.weight[start_cls:end_cls, :]
+
+        # cosine similarity
         out = F.linear(
             F.normalize(input, p=2, dim=1), 
             F.normalize(weight_task, p=2, dim=1)
         )
+        out = self.reduce_proxies(out, self.nb_proxy) if self.to_reduce else out
+        out = self.sigma * out if self.sigma is not None else out
+
+        return out  # [B, num_classes]
+    
+    def forward_all(self, input, task_id, inc=10, feature_dim=768):
+        # input shape [batch, 768]
+        # task class slice
+        start_cls = task_id * inc  
+        end_cls = start_cls + inc
+        
+        weight_task = self.weight[start_cls:end_cls, task_id*feature_dim:(task_id+1)*feature_dim]
+
+        # cosine similarity
+        out = F.linear(
+            F.normalize(input, p=2, dim=1), 
+            F.normalize(weight_task, p=2, dim=1)
+        )
+        out = self.reduce_proxies(out, self.nb_proxy) if self.to_reduce else out
+        out = self.sigma * out if self.sigma is not None else out
+
+        return out  # [B, num_classes]
+    
+    def forward_diagonal(self, input, task_id, inc=10, feature_dim=768):
+        # input shape [batch, 768*num_task]
+        for i in range(task_id + 1):
+            start_cls = i * inc
+            end_cls = start_cls + inc
+
+            input_s = input[:, i * feature_dim : (i+1) * feature_dim]
+            weight_s = self.weight[start_cls : end_cls, i * feature_dim : (i+1) * feature_dim]
+
+            out = F.linear(
+                F.normalize(input_s, p=2, dim=1), 
+                F.normalize(weight_s, p=2, dim=1)
+            )
+
+            if i == 0:
+                out_all = out
+            else: 
+                out_all = torch.cat((out_all, out), dim=1)
+        
         out = self.reduce_proxies(out, self.nb_proxy) if self.to_reduce else out
         out = self.sigma * out if self.sigma is not None else out
 

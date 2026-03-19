@@ -49,7 +49,6 @@ class ViT(VisionTransformer):
             drop_rate=drop_rate, attn_drop_rate=attn_drop_rate, drop_path_rate=drop_path_rate, weight_init=weight_init, init_values=init_values,
             embed_layer=embed_layer, norm_layer=norm_layer, act_layer=act_layer, block_fn=block_fn, n_tasks=n_tasks, rank=rank)
 
-
     def forward(self, x, use_new):
         x = self.patch_embed(x)  
         x = torch.cat((self.cls_token.expand(x.shape[0], -1, -1), x), dim=1)

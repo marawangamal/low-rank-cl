@@ -51,7 +51,11 @@ class ViT(VisionTransformer):
         x = x + self.pos_embed[:,:x.size(1),:]
         x = self.pos_drop(x)
         
-        x = self.forward_shared(x, use_new) if shared else self.forward_feature(x, task_id, use_new)
+        if shared:
+            x = self.forward_shared(x, use_new)
+        else:
+            x= self.forward_feature(x, task_id, use_new)
+
         x = self.norm(x)
             
         return x
@@ -82,7 +86,7 @@ class Net(nn.Module):
         self.fc = None
 
         model_kwargs = dict(patch_size=16, embed_dim=768, 
-                            depth=12, num_heads=12, 
+                            depth=12, num_heads=12,
                             n_tasks=args["sessions"], rank=args["rank"],
                             msa=args["msa"], shared_pos=args["shared_pos"], specific_pos=args["specific_pos"])
         
@@ -91,7 +95,7 @@ class Net(nn.Module):
         for module in self.image_encoder.modules():
             if isinstance(module, Attention_LoRA):
                 module.init_param()
-                
+        
         self._cur_task = -1
         self._device = args['device'][0]
 
@@ -121,9 +125,20 @@ class Net(nn.Module):
         for task_id in range(self._cur_task + 1):
             image_features = self.image_encoder(image, task_id, use_new=True)[:,0,:]
             logits.append(self.fc.forward_all(image_features, task_id, inc=self.increment, feature_dim=self.feature_dim))
-
         logits = torch.cat(logits, dim=1)
         return logits
+
+        # features = []
+        # for task_id in range(self._cur_task + 1):
+        #     image_feature = self.image_encoder(image, task_id, use_new=True)  # [batch, 197, 768]
+        #     features.append(image_feature)
+        # output = torch.Tensor().to(features[0].device)
+        # for x in features:
+        #     cls = x[:, 0, :]  # [batch, 768]
+        #     output = torch.cat((output, cls), dim=1)  # [batch, 768*num_task]
+        # logits = self.fc.forward_diagonal(output, self._cur_task, inc=self.increment, feature_dim=self.feature_dim)
+        # return logits
+    
 
     def update_fc(self, nb_classes):
         """
@@ -158,12 +173,13 @@ class Net(nn.Module):
         self.image_encoder.eval()
 
         with torch.no_grad():
+            # compute prototype for current dat via each task branch
             for task_id in range(self._cur_task + 1):
-                feature_list, target_list = [], []
 
-                for i, (_, inputs, targets) in enumerate(train_loader):
+                feature_list, target_list = [], []
+                for i, (_, inputs, targets) in enumerate(train_loader): 
                     inputs, targets = inputs.to(self._device), targets.to(self._device)
-                    feature = self.image_encoder(inputs, task_id)[:,0,:]
+                    feature = self.image_encoder(inputs, task_id, use_new=True)[:,0,:]
                     feature_list.append(feature.cpu())
                     target_list.append(targets.cpu())
 

@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import copy
 
 from models.vit_sdlora import VisionTransformer, PatchEmbed, Block, Attention_LoRA
 from models.vit_sdlora import resolve_pretrained_cfg, build_model_with_cfg, checkpoint_filter_fn

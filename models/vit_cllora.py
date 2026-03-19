@@ -207,7 +207,11 @@ class LoRA(nn.Module):
 
     def init_parameters(self):
         if self.init_type == 'shared':
-            nn.init.orthogonal_(self.lora_A.weight)
+            #nn.init.orthogonal_(self.lora_A.weight)
+            random_matrix = torch.rand(self.dim, self.r)
+            q, r = torch.linalg.qr(random_matrix)
+            with torch.no_grad():
+                self.lora_A.weight.copy_(q.T)
             nn.init.zeros_(self.lora_B.weight)
 
         elif self.init_type == "specific":
@@ -442,10 +446,7 @@ class VisionTransformer(nn.Module):
         self.adapt_pos = sorted(self.shared_pos + self.specific_pos)
         self.block_weights = nn.ParameterList([
             nn.Parameter(torch.empty(len(self.specific_pos), 3).uniform_(0.5, 1.5))
-            for _ in range(n_tasks)
-        ])
-        # Zero init：torch.zeros(len(self.specific_pos), 3)
-        # CL-LoRA init：torch.empty(len(self.specific_pos), 3).uniform_(0.5, 1.5)
+            for _ in range(n_tasks)])
         # ======================================================
 
         self.num_classes = num_classes
@@ -756,7 +757,6 @@ def _create_vision_transformer(variant, pretrained=False, **kwargs):
         raise RuntimeError('features_only not implemented for Vision Transformer models.')
 
     # NOTE this extra code to support handling of repr size for in21k pretrained models
-    # pretrained_cfg = resolve_pretrained_cfg(variant, kwargs=kwargs)
     pretrained_cfg = resolve_pretrained_cfg(variant)
     default_num_classes = pretrained_cfg['num_classes']
     num_classes = kwargs.get('num_classes', default_num_classes)
@@ -774,6 +774,7 @@ def _create_vision_transformer(variant, pretrained=False, **kwargs):
         pretrained_filter_fn=checkpoint_filter_fn,
         pretrained_custom_load='npz' in pretrained_cfg['url'],
         **kwargs)
+    
     return model
 
 
