@@ -18,6 +18,9 @@ def get_model(method, args):
     elif method == 'ewclora':
         from methods.ewclora import EWCLoRA  # https://arxiv.org/abs/2602.17559
         return EWCLoRA(args)
+    elif method == 'l2lora':
+        from methods.l2lora import L2LoRA
+        return L2LoRA(args)
     else:
         raise ValueError(f"Unknown method: {method}")
 
