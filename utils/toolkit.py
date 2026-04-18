@@ -28,7 +28,10 @@ def makedirs(path):
 
 
 def make_logdir(args):
-    logdir = 'logs/{}/{}/t{}'.format(args['method'], args['dataset'], args['sessions'])
+    if args.get('tune_tag'):
+        logdir = 'tuning_logs/{}/{}/{}'.format(args['method'], args['dataset'], args['tune_tag'])
+    else:
+        logdir = 'logs/{}/{}/t{}'.format(args['method'], args['dataset'], args['sessions'])
     if args['debug']:
         logdir = os.path.join(logdir, 'debug')
     makedirs(logdir)

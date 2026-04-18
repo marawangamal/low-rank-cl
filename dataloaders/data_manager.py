@@ -43,6 +43,9 @@ class DataManager(object):
         if offset > 0:
             self._increments.append(offset)
 
+        if args is not None and args.get('max_tasks'):
+            self._increments = self._increments[:args['max_tasks']]
+
     @property
     def task_num(self):
         return len(self._increments)  # number of tasks
@@ -62,6 +65,19 @@ class DataManager(object):
         self._train_data, self._train_targets = idata.train_data, idata.train_targets
         self._test_data, self._test_targets = idata.test_data, idata.test_targets
         self.use_path = idata.use_path
+
+        subsample = self.args.get('train_subsample_per_class') if self.args else None
+        if subsample:
+            rng = np.random.RandomState(seed)
+            keep = []
+            for cls in np.unique(self._train_targets):
+                idxs = np.where(self._train_targets == cls)[0]
+                if len(idxs) > subsample:
+                    idxs = rng.choice(idxs, subsample, replace=False)
+                keep.append(idxs)
+            keep = np.concatenate(keep)
+            self._train_data = self._train_data[keep]
+            self._train_targets = self._train_targets[keep]
 
         # Transforms
         self._train_trsf = idata.train_trsf
