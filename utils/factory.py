@@ -21,6 +21,9 @@ def get_model(method, args):
     elif method == 'l2lora':
         from methods.l2lora import L2LoRA
         return L2LoRA(args)
+    elif method == 'actmat-c':
+        from methods.actmat_c import ActMatC
+        return ActMatC(args)
     else:
         raise ValueError(f"Unknown method: {method}")
 
