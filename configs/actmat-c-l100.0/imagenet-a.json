@@ -9,7 +9,7 @@
     "sessions" : 10,
     "shuffle" : false,
 
-    "method" : "l2lora",
+    "method" : "actmat-c",
     "optimizer" : "adam",
     "scheduler" : "cosine",
     "epochs" : 20,
@@ -20,5 +20,6 @@
     "rank" : 10,
     "num_workers" : 16,
 
-    "lambda" : 100.0
+    "lambda" : 100.0,
+    "gamma" : 1.0
 }
