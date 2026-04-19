@@ -1,0 +1,31 @@
+2026-04-18 16:10:25,438 [toolkit.py] => config: configs/l2lora-l1.0/domain.json
+2026-04-18 16:10:25,438 [toolkit.py] => device: [device(type='cuda', index=0)]
+2026-04-18 16:10:25,438 [toolkit.py] => debug: False
+2026-04-18 16:10:25,438 [toolkit.py] => save_ckp: False
+2026-04-18 16:10:25,438 [toolkit.py] => seed: 0
+2026-04-18 16:10:25,439 [toolkit.py] => dataset: domainnet
+2026-04-18 16:10:25,439 [toolkit.py] => data_path: data/domainnet
+2026-04-18 16:10:25,439 [toolkit.py] => load: vit_base_patch16_224_in21k
+2026-04-18 16:10:25,439 [toolkit.py] => init_cls: 69
+2026-04-18 16:10:25,439 [toolkit.py] => increment: 69
+2026-04-18 16:10:25,439 [toolkit.py] => sessions: 5
+2026-04-18 16:10:25,439 [toolkit.py] => shuffle: False
+2026-04-18 16:10:25,439 [toolkit.py] => method: l2lora
+2026-04-18 16:10:25,439 [toolkit.py] => optimizer: adam
+2026-04-18 16:10:25,439 [toolkit.py] => scheduler: cosine
+2026-04-18 16:10:25,440 [toolkit.py] => epochs: 5
+2026-04-18 16:10:25,440 [toolkit.py] => lrate: 0.0005
+2026-04-18 16:10:25,440 [toolkit.py] => fc_lrate: 0.005
+2026-04-18 16:10:25,440 [toolkit.py] => weight_decay: 0.0
+2026-04-18 16:10:25,440 [toolkit.py] => batch_size: 128
+2026-04-18 16:10:25,440 [toolkit.py] => rank: 30
+2026-04-18 16:10:25,440 [toolkit.py] => num_workers: 16
+2026-04-18 16:10:25,440 [toolkit.py] => lambda: 1.0
+2026-04-18 16:10:25,440 [toolkit.py] => logdir: logs/l2lora-l1.0/domainnet/t5
+2026-04-18 16:10:25,440 [toolkit.py] => logfilename: logs/l2lora-l1.0/domainnet/t5/seed0
+2026-04-18 16:10:25,688 [data_manager.py] => Class index order: 0, 1, 2, 3, 4, ..., 340, 341, 342, 343, 344
+2026-04-18 16:10:31,284 [trainer.py] => ================================================================================
+2026-04-18 16:10:31,360 [base.py] => Task 0 learning on class 0-69
+2026-04-18 16:10:32,443 [toolkit.py] => Total params:     105,073,068
+2026-04-18 16:10:32,444 [toolkit.py] => Trainable params: 1,158,981
+2026-04-18 16:10:32,444 [toolkit.py] => Trainable ratio:  1.1030%

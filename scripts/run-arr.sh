@@ -2,15 +2,16 @@
 #SBATCH --job-name=low-rank-cl
 #SBATCH --partition=main
 #SBATCH --gres=gpu:l40s:1
-#SBATCH --cpus-per-task=16
-#SBATCH --mem=48G
+#SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=32G
 #SBATCH --time=06:00:00
-#SBATCH --array=0-4
+#SBATCH --array=0-1
 #SBATCH --output=logs/slurm/%x-%A_%a.out
 
 set -euo pipefail
 
-METHODS=(l2lora-l1.0 l2lora-l10.0)
+METHODS=(l2lora-l10.0)
 DATASETS=(imagenet-a imagenet-r)
 
 idx=$SLURM_ARRAY_TASK_ID

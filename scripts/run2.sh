@@ -3,8 +3,8 @@ set -euo pipefail
 
 DEVICE=0
 
-METHODS=(l2lora-l100.0)
-DATASETS=(cifar100 imagenet-r imagenet-a)
+METHODS=(l2lora-l10.0)
+DATASETS=(imagenet-r imagenet-a)
 
 cd /home/mila/m/marawan.gamal/scratch/low-rank-cl
 source .venv/bin/activate
