@@ -31,6 +31,8 @@ def make_logdir(args):
     method = args['method']
     if 'lambda' in args:
         method = '{}-l{}'.format(method, args['lambda'])
+    if 'gamma' in args:
+        method = '{}-g{}'.format(method, args['gamma'])
     logdir = 'logs/{}/{}/t{}'.format(method, args['dataset'], args['sessions'])
     if args['debug']:
         logdir = os.path.join(logdir, 'debug')
