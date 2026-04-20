@@ -40,7 +40,7 @@ class EWCDLoRA(BaseLearner):
             F.cross_entropy,
             self.device,
         )
-        fisher_W = fisher.compute(max_batches=None)
+        fisher_W = fisher.compute_approx()
 
         omega_W_bk = self.omega_W[:]
         self.omega_W = []
@@ -224,6 +224,25 @@ class FisherComputer:
                     idx += 1
         self.fisher_W = [fw / num_samples for fw in self.fisher_W]
 
+        return self.fisher_W
+
+    def compute_approx(self):
+        """Closed-form diag Fisher approx: diag[(d^T d) kron (d d^T)] = outer(row_sq, col_sq).
+
+        Walks modules in the same K-then-V order as _init_fisher_storage / compute.
+        """
+        idx = 0
+        for module in self.model.modules():
+            if hasattr(module, "lora_new_B_k") and hasattr(module, "lora_new_A_k"):
+                d = (module.lora_new_B_k.weight @ module.lora_new_A_k.weight).detach()
+                d_sq = d * d
+                self.fisher_W[idx] = torch.outer(d_sq.sum(dim=1), d_sq.sum(dim=0))
+                idx += 1
+            if hasattr(module, "lora_new_B_v") and hasattr(module, "lora_new_A_v"):
+                d = (module.lora_new_B_v.weight @ module.lora_new_A_v.weight).detach()
+                d_sq = d * d
+                self.fisher_W[idx] = torch.outer(d_sq.sum(dim=1), d_sq.sum(dim=0))
+                idx += 1
         return self.fisher_W
 
     def _init_fisher_storage(self):
