@@ -16,30 +16,41 @@ class EWCDLoRA(BaseLearner):
 
     def __init__(self, args):
         super().__init__(args)
-        
+
         self.topk = 1
         self.network = Net(args)
 
+        # ewclora
         self.gamma = args["gamma"]
         self.ewc_weight = args["lambda"]
         self.omega_W = []  # Importance matrix
         self.count_updates = 0
-        
+
     def after_task(self):
         super().after_task()
 
         # Compute Fisher Information Matrix
         print("=== Update Importance Matrix ===")
         self.count_updates += 1
-        fisher = FisherComputer(self.cur_task, self.network, self.train_loader, 
-                                self.increment, F.cross_entropy, self.device)
+        fisher = FisherComputer(
+            self.cur_task,
+            self.network,
+            self.train_loader,
+            self.increment,
+            F.cross_entropy,
+            self.device,
+        )
         fisher_W = fisher.compute(max_batches=None)
 
         omega_W_bk = self.omega_W[:]
         self.omega_W = []
 
-        new_a_params = filter(lambda p: getattr(p, '_is_new_a', False), self.network.parameters())
-        new_b_params = filter(lambda p: getattr(p, '_is_new_b', False), self.network.parameters())
+        new_a_params = filter(
+            lambda p: getattr(p, "_is_new_a", False), self.network.parameters()
+        )
+        new_b_params = filter(
+            lambda p: getattr(p, "_is_new_b", False), self.network.parameters()
+        )
         for idx, (p_a, p_b) in enumerate(zip(new_a_params, new_b_params)):
             if len(omega_W_bk) != 0:
                 self.omega_W.append(self.gamma * omega_W_bk[idx] + fisher_W[idx])
@@ -54,13 +65,25 @@ class EWCDLoRA(BaseLearner):
         print_trainable_params(self.network)
 
         encoder_params = self.network.image_encoder.parameters()
-        cls_params = [p for p in self.network.classifier_pool.parameters() if p.requires_grad==True]
+        cls_params = [
+            p
+            for p in self.network.classifier_pool.parameters()
+            if p.requires_grad == True
+        ]
 
         if len(self.multiple_gpus) > 1:
             self.network = nn.DataParallel(self.network, self.multiple_gpus)
-        
-        encoder_params = {'params': encoder_params, 'lr': self.lrate, 'weight_decay': self.weight_decay}
-        cls_params = {'params': cls_params, 'lr': self.fc_lrate, 'weight_decay': self.weight_decay}
+
+        encoder_params = {
+            "params": encoder_params,
+            "lr": self.lrate,
+            "weight_decay": self.weight_decay,
+        }
+        cls_params = {
+            "params": cls_params,
+            "lr": self.fc_lrate,
+            "weight_decay": self.weight_decay,
+        }
 
         network_params = [encoder_params, cls_params]
         optimizer, scheduler = self.build_optimizer(network_params)
@@ -76,31 +99,39 @@ class EWCDLoRA(BaseLearner):
         prog_bar = tqdm(range(self.epochs))
         for _, epoch in enumerate(prog_bar):
             self.network.train()
-            losses = 0.
+            losses = 0.0
             correct, total = 0, 0
 
             for i, (_, inputs, targets) in enumerate(train_loader):
                 inputs, targets = inputs.to(self.device), targets.to(self.device)
                 mask = (targets >= self.known_classes).nonzero().view(-1)
                 inputs = torch.index_select(inputs, 0, mask)
-                targets = torch.index_select(targets, 0, mask)-self.known_classes
+                targets = torch.index_select(targets, 0, mask) - self.known_classes
 
-                logits = self.network(inputs, use_new=True)['logits']
+                logits = self.network(inputs, use_new=True)["logits"]
                 loss = F.cross_entropy(logits, targets)
 
                 # regularization loss
                 if self.count_updates != 0:
-                    new_a_params = filter(lambda p: getattr(p, '_is_new_a', False), self.network.parameters())
-                    new_b_params = filter(lambda p: getattr(p, '_is_new_b', False), self.network.parameters())
-                    ewc_loss = 0.
+                    new_a_params = filter(
+                        lambda p: getattr(p, "_is_new_a", False),
+                        self.network.parameters(),
+                    )
+                    new_b_params = filter(
+                        lambda p: getattr(p, "_is_new_b", False),
+                        self.network.parameters(),
+                    )
+                    ewc_loss = 0.0
                     for idx, (p_a, p_b) in enumerate(zip(new_a_params, new_b_params)):
                         delta_W = p_b @ p_a
-                        ewc_term = self.omega_W[idx].type(torch.float32).to(self.device) * (delta_W ** 2)
+                        ewc_term = self.omega_W[idx].type(torch.float32).to(
+                            self.device
+                        ) * (delta_W**2)
                         ewc_loss += torch.sum(ewc_term)
-                        
-                    weighted_ewc_loss = self.ewc_weight/2. * ewc_loss
+
+                    weighted_ewc_loss = self.ewc_weight / 2.0 * ewc_loss
                     loss += weighted_ewc_loss
-                    
+
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
@@ -113,8 +144,13 @@ class EWCDLoRA(BaseLearner):
             scheduler.step()
             train_acc = np.around(tensor2numpy(correct) * 100 / total, decimals=2)
 
-            info = 'Task {}, Epoch {}/{} => Loss {:.3f}, Train_accy {:.2f}'.format(
-                self.cur_task, epoch + 1, self.epochs, losses / len(train_loader), train_acc)
+            info = "Task {}, Epoch {}/{} => Loss {:.3f}, Train_accy {:.2f}".format(
+                self.cur_task,
+                epoch + 1,
+                self.epochs,
+                losses / len(train_loader),
+                train_acc,
+            )
             prog_bar.set_description(info)
 
         logging.info(info)
@@ -133,7 +169,15 @@ class EWCDLoRA(BaseLearner):
 
 
 class FisherComputer:
-    def __init__(self, task_id, network, dataloader, increment, criterion, device=torch.device('cpu')):
+    def __init__(
+        self,
+        task_id,
+        network,
+        dataloader,
+        increment,
+        criterion,
+        device=torch.device("cpu"),
+    ):
         self.model = network.to(device)
         self.dataloader = dataloader
         self.increment = increment
@@ -147,14 +191,18 @@ class FisherComputer:
     def compute(self, max_batches=None):
         self.model.eval()
         num_samples = 0
-        
-        for i, (_, inputs, targets) in enumerate(tqdm(self.dataloader, desc="Computing Fisher")):
+
+        for i, (_, inputs, targets) in enumerate(
+            tqdm(self.dataloader, desc="Computing Fisher")
+        ):
             if max_batches and i >= max_batches:
                 break
             # Empirical Fisher
             inputs, targets = inputs.to(self.device), targets.to(self.device)
             self.model.zero_grad()
-            logits = self.model.forward(inputs, use_new=True, register_hook=True)['logits']
+            logits = self.model.forward(inputs, use_new=True, register_hook=True)[
+                "logits"
+            ]
             targets = targets - self.task_id * self.increment
             loss = self.criterion(logits, targets)
             loss.backward()
@@ -164,26 +212,26 @@ class FisherComputer:
 
             idx = 0
             for module in self.model.modules():
-                if hasattr(module, 'delta_w_k_new_grad'):
+                if hasattr(module, "delta_w_k_new_grad"):
                     grad_k = module.delta_w_k_new_grad
                     if grad_k is not None:
                         self.fisher_W[idx] += (grad_k.detach() ** 2) * batch_size
                     idx += 1
-                if hasattr(module, 'delta_w_v_new_grad'):
+                if hasattr(module, "delta_w_v_new_grad"):
                     grad_v = module.delta_w_v_new_grad
                     if grad_v is not None:
                         self.fisher_W[idx] += (grad_v.detach() ** 2) * batch_size
-                    idx += 1                    
+                    idx += 1
         self.fisher_W = [fw / num_samples for fw in self.fisher_W]
 
         return self.fisher_W
-    
+
     def _init_fisher_storage(self):
         for module in self.model.modules():
-            if hasattr(module, 'lora_new_B_k') and hasattr(module, 'lora_new_A_k'):
+            if hasattr(module, "lora_new_B_k") and hasattr(module, "lora_new_A_k"):
                 delta_w_k_new = module.lora_new_B_k.weight @ module.lora_new_A_k.weight
                 self.fisher_W.append(torch.zeros_like(delta_w_k_new))
-            if hasattr(module, 'lora_new_B_v') and hasattr(module, 'lora_new_A_v'):
+            if hasattr(module, "lora_new_B_v") and hasattr(module, "lora_new_A_v"):
                 delta_w_v_new = module.lora_new_B_v.weight @ module.lora_new_A_v.weight
                 self.fisher_W.append(torch.zeros_like(delta_w_v_new))
 
