@@ -3,7 +3,7 @@ set -euo pipefail
 
 DEVICE=0
 
-METHODS=(actmat-c-l1.0)
+METHODS=(actmat-c-l1000.0)
 DATASETS=(cifar100 imagenet-r imagenet-a)
 
 cd /home/mila/m/marawan.gamal/scratch/low-rank-cl
