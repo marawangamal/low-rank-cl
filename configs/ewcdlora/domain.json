@@ -18,7 +18,7 @@
     "weight_decay": 0.0,
     "batch_size": 128,
     "rank": 30,
-    "num_workers": 16,
+    "num_workers": 4,
     "gamma": 1.0,
     "lambda": 10000000.0
 }

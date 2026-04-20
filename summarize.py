@@ -5,7 +5,7 @@ from pathlib import Path
 CURVE_RE = re.compile(r"\(curve\) top1 Acc: \[([^\]]+)\]")
 
 
-def final_acc(log_path: Path) -> float | None:
+def final_acc(log_path: Path, expected_tasks: int) -> float | None:
     last = None
     for line in log_path.read_text().splitlines():
         m = CURVE_RE.search(line)
@@ -13,7 +13,10 @@ def final_acc(log_path: Path) -> float | None:
             last = m.group(1)
     if last is None:
         return None
-    return float(last.rsplit(",", 1)[-1].strip())
+    accs = [a.strip() for a in last.split(",")]
+    if len(accs) != expected_tasks:
+        return None
+    return float(accs[-1])
 
 
 def main() -> None:
@@ -27,8 +30,11 @@ def main() -> None:
     datasets: set[str] = set()
 
     for log in sorted(root.glob(f"*/*/t*/{args.seed}.log")):
-        method, dataset, _tdir, _ = log.relative_to(root).parts
-        acc = final_acc(log)
+        method, dataset, tdir, _ = log.relative_to(root).parts
+        if not (tdir.startswith("t") and tdir[1:].isdigit()):
+            continue
+        expected_tasks = int(tdir[1:])
+        acc = final_acc(log, expected_tasks)
         if acc is None:
             continue
         results.setdefault(method, {})[dataset] = acc
