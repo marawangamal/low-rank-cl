@@ -24,6 +24,9 @@ def get_model(method, args):
     elif method == 'actmat-c':
         from methods.actmat_c import ActMatC
         return ActMatC(args)
+    elif method == 'actmat-d':
+        from methods.actmat_d import ActMatD
+        return ActMatD(args)
     elif method == 'ewcdlora':
         from methods.ewcdlora import EWCDLoRA
         return EWCDLoRA(args)
