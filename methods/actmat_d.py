@@ -32,7 +32,7 @@ class ActMatD(BaseLearner):
         print("=== Update Activation Covariance ===")
         self.count_updates += 1
         cov = CovarianceComputer(self.network, self.train_loader, self.device)
-        cov_W = cov.compute(max_batches=None)
+        cov_W = cov.compute_approx()
 
         omega_W_bk = self.omega_W[:]
         self.omega_W = []
@@ -200,4 +200,20 @@ class CovarianceComputer:
             C = store["cobj"].cov
             cov_W.append(C)  # k slot
             cov_W.append(C)  # v slot (same tensor, shared reference)
+        return cov_W
+
+    def compute_approx(self):
+        """Data-free covariance proxy: C ≈ d^T d with d = B_new @ A_new.
+
+        Walks modules in the same K-then-V order as compute(), producing a
+        separate (Di, Di) proxy per K/V rather than the shared activation cov.
+        """
+        cov_W = []
+        for module in self.model.modules():
+            if hasattr(module, "lora_new_B_k") and hasattr(module, "lora_new_A_k"):
+                d = (module.lora_new_B_k.weight @ module.lora_new_A_k.weight).detach()
+                cov_W.append(d.T @ d)
+            if hasattr(module, "lora_new_B_v") and hasattr(module, "lora_new_A_v"):
+                d = (module.lora_new_B_v.weight @ module.lora_new_A_v.weight).detach()
+                cov_W.append(d.T @ d)
         return cov_W
